@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cartes ADM2010 chapitre 1</title>
+<style>
+:root {
+  --bg: #f4f7fb;
+  --card: #ffffff;
+  --text: #172033;
+  --muted: #1858b8;
+  --accent: #1e72d1;
+  --accent2: #2a1ddd;
+  --shadow: 0 12px 35px rgba(31, 41, 55, .12);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 18px 40px;
+}
+h1 { text-align:center; margin: 0 0 8px; font-size: 28px; }
+.subtitle { text-align:center; color:var(--muted); margin-bottom:24px; }
+.counter { text-align:center; color:var(--muted); margin-bottom:18px; font-size:14px; }
+.success-panel { position: sticky; top: 0; z-index: 30; background: rgba(244,247,251,.96); backdrop-filter: blur(8px); padding: 12px 0 14px; margin: 0 0 18px; }
+.success-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:560px; margin:0 auto 8px; font-size:14px; font-weight:bold; }
+.success-percent { color:#19c909; font-size:22px; font-weight:800; }
+.success-track { max-width:560px; height:10px; margin:0 auto 7px; background:#fecaca; border-radius:999px; overflow:hidden; }
+.success-fill { height:100%; width:100%; background:#20ca4b; border-radius:999px; transition:width .25s ease; }
+.success-details { text-align:center; color:var(--muted); font-size:12px; }
+.grid { display:flex; flex-direction:column; gap:16px; }
+.card-wrap {
+  perspective: 1200px;
+  height: 190px;
+  cursor: pointer;
+}
+.card {
+  width:100%; height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition: transform .6s ease;
+}
+.card.flipped { transform:rotateY(180deg); }
+.face {
+  position:absolute; inset:0;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  background:var(--card);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:28px;
+  font-size:20px;
+  line-height:1.45;
+}
+.front { border-top:5px solid var(--accent); }
+.back {
+  transform:rotateY(180deg);
+  border-top:5px solid #310123;
+  font-size:18px;
+}
+.hint {
+  position:absolute; bottom:10px; left:0; right:0;
+  text-align:center; font-size:12px; color:var(--muted);
+}
+button {
+  display:block;
+  margin:30px auto 0;
+  border:0;
+  border-radius:999px;
+  padding:14px 30px;
+  background:var(--accent);
+  color:white;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(49,94,251,.25);
+}
+button:hover { background:var(--accent2); }
+
+.card-wrap { position: relative; }
+.card-wrap.marked .face { border: 3px solid #e53935 !important; }
+.card-wrap.marked .front { border-top: 5px solid #e53935 !important; }
+.mark-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #b71c1c;
+  background: #e53935;
+  padding: 0;
+  margin: 0;
+  z-index: 20;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,.18);
+}
+.mark-btn:hover { background: #c62828; }
+.mark-btn.marked { background: #8b0000; }
+
+/* Bulle flottante des cartes d'erreurs */
+.error-bubble {
+  position: fixed; right: 22px; bottom: 22px; z-index: 1000;
+  width: 62px; height: 62px; border-radius: 50%; margin: 0; padding: 0;
+  background: #e53935; color: #fff; border: 3px solid #fff;
+  box-shadow: 0 5px 18px rgba(0,0,0,.25); font-size: 25px;
+  display: flex; align-items: center; justify-content: center;
+}
+.error-bubble:hover { background: #c62828; }
+.error-badge {
+  position: absolute; top: -6px; right: -5px; min-width: 25px; height: 25px;
+  padding: 0 6px; border-radius: 999px; background: #172033; color: white;
+  border: 2px solid white; font-size: 13px; line-height: 21px; text-align: center;
+}
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1100;
+  background: rgba(15, 23, 42, .62); padding: 24px;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.error-modal {
+  width: min(850px, 100%); max-height: 88vh; overflow-y: auto;
+  background: var(--bg); border-radius: 18px; padding: 24px; position: relative;
+  box-shadow: 0 18px 60px rgba(0,0,0,.35);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-right: 42px; }
+.modal-header h2 { margin: 0 0 18px; font-size: 22px; }
+.close-modal {
+  position: absolute; top: 12px; right: 12px; margin: 0; width: 38px; height: 38px;
+  padding: 0; border-radius: 50%; background: #e5e7eb; color: #172033; font-size: 25px;
+  box-shadow: none;
+}
+.close-modal:hover { background: #cbd5e1; }
+.error-list { display: flex; flex-direction: column; gap: 14px; }
+.error-card { position: relative; min-height: 145px; background: white; border: 2px solid #e53935;
+  border-top: 5px solid #e53935; border-radius: 14px; padding: 24px 48px 24px 20px;
+  box-shadow: var(--shadow); cursor: pointer; white-space: pre-wrap; line-height: 1.45; }
+.error-card .answer { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e7eb; }
+.error-card.flipped .answer { display: block; }
+.unmark-btn {
+  position: absolute; top: 8px; right: 8px; margin: 0; padding: 0; width: 20px; height: 20px;
+  min-width: 20px; border-radius: 50%; border: 2px solid #0759b7; background: #1e72d1;
+  box-shadow: 0 2px 5px rgba(0,0,0,.18); z-index: 2;
+}
+.unmark-btn:hover { background: #084f9e; }
+.empty-errors { text-align: center; color: var(--muted); padding: 28px 12px; }
+@media (max-width:600px) {
+  .error-bubble { right: 14px; bottom: 14px; width: 56px; height: 56px; }
+  .modal-overlay { padding: 10px; } .error-modal { padding: 18px 12px; max-height: 92vh; }
+  .modal-header h2 { font-size: 19px; }
+}
+
+@media (max-width:600px) {
+  .card-wrap { height:220px; }
+  .face { font-size:18px; padding:22px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📚 ADM2010 Chapitre 1</h1>
+  <div class="subtitle">Clique sur une question pour voir la réponse. Reclique pour revenir à la question.</div>
+  <div class="success-panel" aria-live="polite">
+    <div class="success-heading"><span>✅ Taux de réussite</span><span id="successPercent" class="success-percent">100 %</span></div>
+    <div class="success-track" role="progressbar" aria-label="Taux de réussite" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="successFill" class="success-fill"></div></div>
+    <div id="successDetails" class="success-details">0 carte en rouge · 0 carte réussie sur 0</div>
+  </div>
+  <div class="counter"><span id="count">0</span> cartes</div>
+  <div id="cards" class="grid"></div>
+  <button id="shuffleBtn">🔀 Mélanger</button>
+</div>
+
+<button id="errorBubble" class="error-bubble" type="button" aria-label="Afficher les cartes d'erreurs" title="Afficher les cartes d'erreurs">
+  ⚑ <span id="errorBadge" class="error-badge">0</span>
+</button>
+
+<div id="errorModalOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="errorModalTitle">
+  <div class="error-modal">
+    <button id="closeErrorModal" class="close-modal" type="button" aria-label="Fermer">×</button>
+    <div class="modal-header"><h2 id="errorModalTitle">🔴 Mes cartes d'erreurs (<span id="modalErrorCount">0</span>)</h2></div>
+    <div id="errorCardsList" class="error-list"></div>
+  </div>
+</div>
+
+<script>
+const originalCards = [
+{
+    q: "Quelles sont les autres influenceurs (facteurs) qui peuvent affecter une situation autre que la formation?",
+    a: "Actions comportements, mode de rémunération, répartition des responsabilités du pouvoir, mode d'organisation du travail et politique en matière de gestion des RH."
+  },{
+    q: "Pourquoi les efforts dévolus à la formation et au développement des RH peuvent parfois ne pas obtenir les résultats désirés?",
+    a: "Car il y a d'autres influenceurs(facteur) qui peuvent affecter une situation."
+  },{
+    q: "Qu'est-ce qu'est la formation permet de faire?",
+    a: "1) acquérir de nouvelles compétences, 2) inculquer de nouvelles valeurs et façon de faire, 3) développer une plus grande polyvalence chez certains employés."
+  },{
+    q: "Que signifie compétences transversales?",
+    a: "Communication, et compétences."
+  },{
+    q: "Quel est le but de la loi favorisant le développement et la reconnaissance des compétences de la main-d'œuvre?",
+    a: "d'améliorer la qualification et les compétences de la main-d'œuvre actuelle et future par 1) l'investissement dans la formation, 2) l'action concentrée des partenaires patronaux syndicaux communautaire et des milieux de l'enseignement, 3) développement des modes d'information, 4) reconnaissance des compétences des travailleurs en emploi, 5) favoriser l'adaptation l'emploi la mobilité de la main-d'œuvre."
+  },{
+    q: "Quel est le montant fixé de la masse salariale qui oblige les employeurs à participer au développement des compétences?",
+    a: "2M."
+  },{
+    q: "Quel est le pourcentage de la masse salariale qui permet à l'employeur de reporter à l'année suivante une partie des dépenses de formation?",
+    a: "Supérieur ou équivalent à 1% de la masse salariale."
+  },{
+    q: "Que signifie le capital humain d'une organisation?",
+    a: "se constitue de l'ensemble des capacités créatrices et productives des employés incluant leur savoir-faire leur expérience ainsi que l'ensemble des connaissances qu'ils détiennent. (Avantage qu'il convient d'accroître et de faire fructifier)."
+  },{
+    q: "Que signifie la théorie du capital humain?",
+    a: "tout investissement susceptible d'améliorer le niveau de formation d'un employé augmenterait son rendement et celui de l'organisation."
+  },{
+    q: "Que signifie capital compétences?",
+    a: "ensemble des compétences qu’acquiert, développe et mobilise une organisation pour réaliser sa mission et assurer son bon fonctionnement."
+  },{
+    q: "Quelle est la différence entre capital humain versus capital compétences?",
+    a: "Le capital humain représente l'ensemble des connaissances, expériences et habiletés qu'un employé possède individuellement, tandis que le capital compétences représente la façon dont l'organisation combine et mobilise les compétences de ses employés collectivement pour atteindre ses objectifs."
+  },{
+    q: "Que signifie méta-analyse?",
+    a: "= méthode d'analyse systématique qui combine résultat de plusieurs études indépendantes et qui permet de tirer des conclusions sur un sujet précis."
+  },{
+    q: "nomme 2 exemples de compétences d'employés versus compétences de l'organisation?",
+    a: "Employé : capacité de travail, force ou talent particulier. Organisation : avantage concurrentiel brevet et innovation."
+  },{
+    q: "nomme un synonyme de compétences organisationnelles?",
+    a: "Compétences collectives."
+  },{
+    q: "quels sont les 2 phénomènes en interaction constante qui influencent l'évolution du capital compétences?",
+    a: "1) la loi de l'obsolescence, 2) l'inflation des compétences requises (ou principal de complexification des emplois)."
+  },{
+    q: "que signifie loi de l'obsolescence?",
+    a: "= phénomène selon lequel les compétences acquises perdent progressivement de leur pertinence et de leur utilité jusqu'à ce qu'elles deviennent désuètes."
+  },{
+    q: "que signifie inflation des compétences requises?",
+    a: "= phénomène selon lequel la complexité des emplois entraîne une spécialisation et un rehaussement continuel des compétences requises."
+  },{
+    q: "Que signifie entropie?",
+    a: "= tendance naturelle d'un système à régresser vers un état se caractérisant par une absence d'ordre de prévisibilité ou par un déclin progressif vers le désordre."
+  },{
+    q: "qu'est-ce que ça veut dire lorsqu'on dit que ‘’les compétences développées au sein d'une organisation sont dites biodégradables’’?",
+    a: "c'est-à-dire qu'elles perdent progressivement de leur pertinence et de leur utilité jusqu'à ce qu'elles deviennent complètement désuètes (voire obsolètes)."
+  },{
+    q: "Dans quelle situation peut-on observer particulièrement la loi de l'obsolescence?",
+    a: "Dans des champs d'expertise à progression rapide comme le secteur des TIC."
+  },{
+    q: "Nomme les facteurs qui peuvent expliquer la fragilité et le caractère périssable des savoirs?",
+    a: "1) L'évolution technologique, 2) la non-utilisation, 3) la perte, 4) le vol, 5) l'absence d'une culture d'apprentissage."
+  },{
+    q: "Que signifie compétences à érosion rapide?",
+    a: "Compétence qui, en raison d'un cycle de vie relativement court, tend à devenir inutilisable ou perd plus rapidement son utilité."
+  },{
+    q: "que signifie compétences à érosion lente?",
+    a: "Compétence qui, en raison d'un cycle de vie plus long, tend à davantage préserver sa pertinence et son utilité dans le temps."
+  },{
+    q: "Que signifi ‘’ syndrome du crocodile’’?",
+    a: "= de l'écart entre le niveau d'exigence des emplois (augmente) et la valeur du capital humain d'une organisation (compétences actuelles baisse à cause de l’obsolescence)."
+  },{
+    q: "Nomme des initiatives de changements organisationnels qui exigent de nouveaux apprentissages et de nouvelles compétences?",
+    a: "1) le traitement des non-conformités dans un système de gestion, 2) l'implantation d'une plateforme informatisée exige des employés un minimum de maitrise des applications, 3) la décentralisation des processus décisionnels et la création d'équipes autonomes, 4) l'adoption d'une approche de gestion dite plus participative, 5) coaching de la part des gestionnaires et des superviseurs."
+  },{
+    q: "Qu’implique ‘’le traitement des non-conformités dans un système de gestion’’ par rapport aux exigences de nouveaux/nouvelles apprentissages/compétences?",
+    a: "ça implique une capacité à mieux diagnostiquer des problèmes et à savoir comment bien rapporter ceux-ci."
+  },{
+    q: "Qu’implique ‘’la décentralisation des processus décisionnels et la création d'équipes autonomes‘’ par rapport aux exigences de nouveaux/nouvelles apprentissages/compétences?",
+    a: "font appel à des habiletés conceptuelles et de prises de décision pour les employés concernés."
+  },{
+    q: "Quelle est la cause de l’impact entre l’inflation compétences qui monte VS loi de l’obsolescence’’ qui baisse?",
+    a: "+ l’écart est grand, plus l'organisation risque de perdre son avantage concurrentiel, et +  l'organisation se maintient dans une telle situation + il lui sera difficile de combler l'écart ainsi créé et plus grands devront être les efforts à consentir pour y remédier."
+  },{
+    q: "Quels sont les 4 grands canaux à l'intérieur desquels peuvent s'inscrire les efforts pouvant être déployés par une organisation (qu’on appelle aussi ‘’canaux de développement du capital compétence’’)?",
+    a: "1) Formation, 2) Apprentissage collaboratif, 3) Apprentissage juste-à-temps, 4) Formation autodigérée."
+  },{
+    q: "Quelles sont les 2 axes horizontal des canaux de développement?",
+    a: "Approche formelle (par l’entremise d’activités de développement) et Apprentissages acquis sur une base informelle (activités courantes se réalisant directement en cours d'emploi ou ailleurs)."
+  },{
+    q: "Que représente plus en détails l’axe horizontal des canaux de développement du capital compétence?",
+    a: "représente d'un côté les apprentissages acquis en suivant; 1) Approche formelle (par l'entremise d'activités de développement) qui sont instaurées pour combler un écart de compétence identifié dans le cadre d'une analyse de besoins de formation. Et de l’autre côté les apprentissages acquis; 2) Approche informelle (soit au moyen d'activités courantes se réalisant directement en cours d'emploi ou ailleurs)."
+  },{
+    q: "Qui suis-je, mes caractéristiques d’activités déployées sous les canaux de l’axe horizontal comprend ‘’le processus de formation est délibéré et il requiert une planification ainsi qu'une organisation pour assurer un déploiement efficace’’?",
+    a: "le côté formel de l’axe."
+  },{
+    q: "Que signifie ‘’apprentissage informel’’?",
+    a: "Apprentissage, non programmé, parfois même involontaire, effectué lors d'activités qu'une personne entreprend dans le cadre normal de son travail ou son métier."
+  },{
+    q: "Quelle est la différence entre un mode synchrone versus asynchrone?",
+    a: "Activité en mode synchrone=Activité qui se déroule en simultané, et où les échanges entre les apprenants et le formateur s'effectuent en temps réel. Activité en mode asynchrone=Activité qui se déroule en différé, et où les échanges entre les apprenants et le formateur s'effectuent en des temps et moments différents."
+  }, {
+    q: "Que signifi ‘’ Formation hybride ‘’?",
+    a: "Activité qui combine, à la fois, des portions d'enseignement (ou activités) en modes synchrone et asynchrone."
+  },{
+    q: "Que signifi ‘’formation’’?",
+    a: "Ensemble d'activités planifiées visant à favoriser l'acquisition des connaissances, des habiletés et des attitudes, afin d'accroître l'efficacité et l'efficience des individus, des équipes de travail et des organisations."
+  }, {
+    q: "Quel est le but de la formation?",
+    a: "le but d'éliminer un écart de rendement préalablement identifié."
+  },{
+    q: "Que signifie la formation autodigérée?",
+    a: "processus par lequel un apprenant assume la responsabilité de sa propre démarche d'apprentissage."
+  }, {
+    q: "Quels sont les 4 éléments à savoir par rapport à la formation autodirigée?",
+    a: "la conscience chez l’individu de ses besoins en matière d’apprentissage, 2) sa responsabilité dans la conduite de son processus de formation, 3) sa relative autonomie dans le processus (sans recours, obligé à un formateur), et 4) le caractère plus ou moins planifier des activités d’apprentissage."
+  },{
+    q: "La formation autodirigée se rapproche de quoi par rapport aux canaux de développement du canal compétences de l'organisation?",
+    a: "qu'il se rattache davantage à une démarche formelle impliquant une prise en charge par l'apprenant de son processus d'apprentissage. Elle autodirigée peut être assistée ou non par un formateur. C’est un mode asynchrone. L'autoformation, pour sa part peut donc aussi faire référence à une démarche plus ou moins formelle."
+  }, {
+    q: "L'apprentissage collaboratif est-il un mode synchrone ou asynchrone?",
+    a: "Synchrone, car ils nécessitent de créer un moment dans le temps pendant que des personnes ayant des connaissances et des expertises complementairespeuvent.se réunir pour échanger et apprendre les uns des autres. (Apprentissage collaboratif = groupe)."
+  },{
+    q: "Qu'est-ce que le principe d'apprentissage juste-à-temps?",
+    a: "forme de soutien à la performance, c'est-à-dire des ressources pédagogiques en format papier ou intégrées dans des plateformes informatiques maison que l'on nomme «outils d'aide à la tâche», « méthodes appropriées de travail» ou «procédures d'opération standardisées»."
+  }, {
+    q: "Qu’est-ce que le modèle d'ingénierie pédagogique?",
+    a: "aussi souvent désigné par l'acronyme ADDIE, cadre de référence largement utilisé en formation afin de guider les efforts entourant l'élaboration d'une activité d'apprentissage."
+  },{
+    q: "Que signifi ADDIE?",
+    a: "Désigne le modèle d'ingénierie pédagogique, ce modèle implique des activités d'analyse (Analyse)= Identification et analyse des besoins, de planification (Design)= design de la formation, de conception (Développment)= conception de la formation, de diffusion (Implementation)= Déploiement de l'activité auprès des apprenants (Evaluation)= évaluation de la formation, mesure des apprentissages et du retour sur investissement."
+  }, {
+    q: "Quel est le synonyme du modèle d’ingénierie pédagogique (ADDIE)?",
+    a: "Processus de gestion de la formation."
+  },{
+    q: "Nomme les 5 étapes du processus de gestion de la formation?",
+    a: "1) Identification et analyse des besoins, 2) Design de la formation, 3) conception de la formation, 4) diffusion de la formation, 5) évaluation de la formation."
+  }, {
+    q: "Que signifie l'étape 1 l'identification et l'analyse des besoins du processus de gestion de la formation?",
+    a: "Recueillir les données nécessaires à la bonne compréhension de la situation pour laquelle des besoins de formation sont relevés. L’ analyse doit permettre de faire ressortir les éléments qui expliquent l'écart de rendement ET permettre de confirmer que cet écart de rendement est bien tributaire d'un manque de compétences."
+  },{
+    q: "Que signifie l'étape 2 design de la formation du processus de gestion de la formation?",
+    a: "Objectif de définir la stratégie de formation qui permettra le mieux de combler l'écart de rendement identifié à l'étape précédente. On s'appuie sur les conclusions de l'analyse des besoins (pourquoi, quoi, pour qui, qui)."
+  }, {
+    q: "Que signifie l'étape 3 conception de la formation du processus de gestion de la formation?",
+    a: "consiste à développer le contenu de la formation ou d'en faire l'acquisition auprès d'un fournisseur externe, et choisir les méthodes d'apprentissage et les techniques d'enseignement, et permettra également de développer les manuels et les guides."
+  },{
+    q: "Que signifie l'étape 4 la diffusion de la formation du processus de gestion de la formation?",
+    a: "veiller au déploiement adéquat de la stratégie pédagogique retenue et d'être attentif au processus d'appropriation des connaissances et des compétences par les apprenants."
+  }, {
+    q: "Concernant l'étape 4 la diffusion de la formation du processus de gestion de la formation à qui revient le rôle de cette étape?",
+    a: "Le formateur."
+  },{
+    q: "Que signifie l'étape 5 l'évaluation de la formation du processus de la gestion de la formation?",
+    a: "prêter à l'évaluation des apprentissages réalisés par les apprenants en vérifiant l'intégration des connaissances au moyen d'un examen ou d'une activité particulière, recueillir les réactions des apprenants par rapport à l'activité de formation, et voir comment les apprenants mettent en fonctions leurs nouveaux apprentissages (transfert des apprentissages)."
+  }, {
+    q: "Que signifi la centralisation de la gestion de la formation?",
+    a: "Ici, dans un modèle dit centralisé, toutes les décisions concernant la formation sont regroupées dans une même unité ou sont assumées par une seule personne ou un seul service. Par exemple, les décisions de formation pourraient sous la responsabilité uniquement du service des ressources humaines ou d’un centre de développement des compétences. Cette entité définira alors les priorités de formation pour l’ensemble d’une organisation, elle planifiera aussi les programmes, le budget sera aussi centralisé et ce sera la seule entité à évaluer les résultats de la formation. Les gestionnaires ont plutôt un rôle consultatif, ils sont moins décisionnels, tandis que, dans notre exemple, le service RH sera l’acteur principal qui contrôle et valide tout."
+  },{
+    q: "Que signifi la décentralisation de la gestion de la formation?",
+    a: "peut se comprendre comme une répartition ou une délégation des différents rôles selon les intérêts ou les expertises des acteurs, des départements ou des équipes. Ici, le service RH ne sera pas le seul à tout décider, les équipes ou les différents départements pourront décider eux-mêmes des formations requises selon les besoins qu’ils auront eux-mêmes identifiés pour leurs employés. On peut avoir dans ce modèle des budgets qui sont gérés localement ou par département, des pratiques qui sont différentes d’un département à l’autre. Ici, le service RH ou la personne RH qui gère la formation aura plutôt un rôle de conseil ou de soutien dans le développement des compétences. À titre d’exemple, on peut penser à un département d’ingénierie qui choisit lui-même les formations spécialisées pour ses équipes d’ingénieur.e.s, avec un partenaire RH qui aide à structurer l’offre de formation selon les besoins exprimés."
+  }, {
+    q: "Qu'est-ce qui pousse les organisations à investir en formation?",
+    a: "Les organisations évoluent dans un environnement marqué par des bouleversements majeurs : mondialisation des marchés, pénurie et diversification de la main-d’œuvre, complexité accrue des emplois, et nécessité de gérer et d’intégrer les connaissances. Ces transformations créent une pression constante pour maintenir et développer les compétences, ce qui explique pourquoi la formation est devenue un levier stratégique."
+  },{
+    q: "Que font les organisations face au défi de la loi de l’obsolescence des compétences et l’inflation des compétences?",
+    a: "elles s’appuient sur différents canaux de développement dont : la formation planifiée, la formation autodirigée et l'apprentissage collaboratif."
+  }, {
+    q: "Qu’est-ce qu’on défini comme étant ‘’soft skills’’?",
+    a: "(par ex. pensée critique, résolution de problèmes, leadership, adaptabilité, communication)."
+  },{
+    q: "Qu’est-ce que ‘’la notion de compétence’’?",
+    a: "une capacité à utiliser d’une certaine façon les connaissances, les savoir-faire et les comportements pour maîtriser des situations professionnelles connues ou nouvelles, et obtenir les résultats attendus."
+  }, {
+    q: "Que signifi ‘’être compétent’’?",
+    a: "être capable de réaliser une tâche donnée de façon satisfaisante dans des conditions qui peuvent être changeantes ou diverses."
+  },{
+    q: "Explique la différence entre ‘’être compétent’’ VS ‘’la notion de formation’’?",
+    a: "La notion de formation fait référence à « un ensemble d’activités planifiées visant à influencer le processus d’acquisition des connaissances, des habiletés et des attitudes, et ce, afin d’accroître l’efficacité et l’efficience ». Alors que les compétences se produisent après la formation (acquérir de nouvelles connaissances+savoir-faire+comportements=compétences)."
+  }, {
+    q: "En quoi la formation permet-elle de prévenir l’obsolescence des compétences?",
+    a: "Mises à jour périodiques d’activités de formation (rafraîchissement des connaissances actuelles et apprentissage de nouvelles façons de faire)."
+  },{
+    q: "Que signifi le mot ''érosion''?",
+    a: "désigne la perte progressive de la pertinence et de l'utilité des connaissances et des habiletés d'un employé avec le temps, pouvant les rendre obsolètes (usure)."
+  }, {
+    q: "Quels moyens pourriez-vous mettre en place pour ralentir l’érosion des compétences des travailleurs au sein d’une entreprise par rapport à la loi de l’obsolescence?",
+    a: "1) ’une personne responsable de la formation pourrait s’assurer ici de mettre en place, après une formation, des activités de transfert des nouveaux apprentissages pour en faciliter l’utilisation, 2) favoriser des moments formels ou informels d’échange des savoir-faire et de partage des compétences entre les travailleurs dans des activités ciblées (ex. : l’heure du dîner avec une réflexion sur une thématique), pour créer une synergie et favoriser les bases d’une culture de partage."
+  },{
+    q: "Qu’est-ce qui permet de maintenir la pleine valeur des compétences?",
+    a: "Les mises à jour périodiques par des activités de formation."
+  }, {
+    q: "Vrai ou faux; Considérant que les compétences et les connaissances des employés au sein d’une organisation peuvent se détériorer, le processus de formation doit s’inscrire dans un cycle continu?",
+    a: "Vrai. Ici, nous faisons référence à ADDIE (processus de gestion de la performance/Modèle d'ingénierie pédagogique en 5 étapes). Et dès qu’un cycle se termine, il doit être considéré comme le début d’un nouveau processus de formation, où la formation est considérée comme optimale dans ce processus évolutif et adaptatif."
+  },{
+    q: "L’apprentissage collaboratif et la formation autodirigée font tous 2 appel à quelle structure particulière?",
+    a: "le groupe, dans le premier cas, et l’individu, dans le second."
+  }, {
+    q: "Convient-il d’associer le groupe et l’individu de l’apprentissage collaboratif et de la formation autodigérée dans une stratégie globale de développement des compétences au sein d’une même organisation?",
+    a: "oui, d’abord prôner la formation autodirigée (faire un cheminement personnel par des activités qui requièrent une autonomie), puis ensuite 2) l’apprentissage collaboratif (partager ses connaissances et ses compétences avec d’autres individus)."
+  },{
+    q: "Qu’implique la formation autodirigée?",
+    a: "la prise en charge par un individu de son propre développement de compétences."
+  }, {
+    q: "Vrai ou faux; L’inflation des compétences est l’une des tendances qui accroît la non-compétence au sein d’une organisation?",
+    a: "Vrai, les employeurs demandent un plus grand niveau de compétences, ce qui peut créer de la non-compétence en créant un écart entre les exigences des emplois qui ont été révisées ET les compétences détenues et actuelles d’un individu."
+  },{
+    q: "Quel est le synonyme du ‘’processus de la gestion de la formation’’?",
+    a: "Voire modèle d’ingénierie pédagogique (ADDIE)."
+  }, {
+    q: "Nomme des pistes de pourquoi les résultats d’une formation peuvent ne pas avoir été concluent?",
+    a: "1) • Il n’y a pas eu d’analyse des besoins menée auprès du client et des participants potentiels. 2)• La formation a été conçue sans l’aide des principales parties impliquées (c’est-à-dire la cliente, l’équipe interne de conseillers de FormExperts, les représentants syndicaux, etc.).3) • Le synopsis de la formation ne semble pas avoir été complété pour assurer une analyse contextuelle en bonne et due forme. 4)• La formation aurait pu s’inscrire dans une démarche d’ensemble visant à répondre aux préoccupations et aux besoins des participants. 5)• L’urgence d’agir a guidé le groupe participant à l’élaboration de l’activité, alors qu’il aurait sans doute été plus avisé de prendre le temps de conduire les étapes du processus habituel de gestion d’une activité de formation (modèle ADDIE). 6)• Le client ne connaît pas nécessairement l’ensemble des besoins des participants (ce qui semble avoir été tenu pour acquis). 7)• L’équipe de conseillers internes s’avère une ressource très précieuse (qui demeure sous-utilisée dans le présent cas)."
+  },{
+    q: "Nomme des manquements reliés au formateur en tenant compte de l’étape 1 du processus du modèle ADDIE sur l’ingénierie de la formation (Analyse des besoins), indiquez les manquements dans les différentes actions entreprises (ou non entreprises) par la formatrice et ses collègues concernant cette demande de formation?",
+    a: "Mauvaise collecte de données, l’ analyse doit permettre de faire ressortir les éléments qui expliquent l'écart de rendement ET permettre de confirmer que cet écart de rendement est bien tributaire d'un manque de compétences, sauf que si le formateur fait mal la collecte de données (quels sont les besoins de l’entreprise) c’est un manquement."
+  }, {
+    q: "Nomme des manquements reliés au formateur en tenant compte de l’étape 2 du processus du modèle ADDIE sur l’ingénierie de la formation (Design de la formation), indiquez les manquements dans les différentes actions entreprises (ou non entreprises) par la formatrice et ses collègues concernant cette demande de formation?",
+    a: "SI les renseignements récoltés à l’analyse des besoins ne sont PAS corrects, la stratégie de formation qui permettra le mieux de combler l'écart de rendement identifié à l'étape précédente sera MAL définie, donc le plan sera MAL conçu."
+  },{
+    q: "Nomme des manquements reliés au formateur en tenant compte de l’étape 3 du processus du modèle ADDIE sur l’ingénierie de la formation (Conception de la formation), indiquez les manquements dans les différentes actions entreprises (ou non entreprises) par la formatrice et ses collègues concernant cette demande de formation?",
+    a: "Par faute de mauvaise analyse des besoins et mauvais développement de la formation et ses objectifs, il faut admettre sans critiquer les efforts réalisés par les membres de l’équipe, que les travaux préparatoires à la formation (étapes 1&2) et les documents la soutenant n’ont PAS permis de pouvoir structurer les contenus de sorte à garantir le succès de l’activité."
+  }, {
+    q: "Nomme des manquements reliés au formateur en tenant compte de l’étape 4 du processus du modèle ADDIE sur l’ingénierie de la formation (Diffusion de la formation), indiquez les manquements dans les différentes actions entreprises (ou non entreprises) par la formatrice et ses collègues concernant cette demande de formation?",
+    a: "Même si un outil de présentation ai été utilisé, plusieurs éléments peuvent aider la formatrice ç évaluer si cette telle ou telle façon de faire était bien la meilleure (voire la + optimale) au vu de la situation. Il y a des méthodes d’apprentissage et des techniques d’enseignement qui peuvent indiquer à la formatrice les avantages et inconvénients de chaque formule, c’est à la formatrice de bien évaluer et prendre les bons outils."
+  },{
+    q: "Nomme des manquements reliés au formateur en tenant compte de l’étape 5 du processus du modèle ADDIE sur l’ingénierie de la formation (Évaluation de la formation), indiquez les manquements dans les différentes actions entreprises (ou non entreprises) par la formatrice et ses collègues concernant cette demande de formation?",
+    a: "Il faut commencer une activité en ayant déjà la fin en tête, il faut donc planifier les mécanismes qui serviront à évaluer les qualités de l’intervention. La formatrice doit clarifier déjà avant la formation ce que la clientèle souhaite observer chez les participants pour l’intervention."
+  }, {
+    q: "Amont VS Aval définitions?",
+    a: "? En amont = avant la formation VS En aval = après la formation."
+  },{
+    q: "Donne un exemple réalisé en bonne et due forme pour le canal ‘’formation’’ pour assurer le développement du capital compétence d’une organisation?",
+    a: "Une formation se tenant sur une journée (ou une demi-journée) visant à sensibiliser les membres de l’organisation aux différentes réactions émotionnelles et comportementales que peut engendrer un tel changement; et les moyens (voire stratégies) pouvant être mis en place pour gérer ces mêmes réactions chez le personnel."
+  }, {
+    q: "Donne un exemple réalisé en bonne et due forme pour le canal ‘’apprentissage collaboratif’’ pour assurer le développement du capital compétence d’une organisation?",
+    a: "Inviter les employés à participer à une activité interactive visant à identifier les questions auxquelles ils aimeraient obtenir des réponses ou encore partager entre eux des idées de solutions (un peu à l’idée d’une communauté de pratique mise en place pour la durée du changement)."
+  },{
+    q: "Donne un exemple réalisé en bonne et due forme pour le canal ‘’formation autodirigée’’ pour assurer le développement du capital compétence d’une organisation?",
+    a: "Inviter les employés à prendre connaissance de différents documents visant à mieux les renseigner sur cette initiative de transition et les implications qu’elle aura sur leur rôle et leurs fonctions au sein de l’entreprise. Ces documents pourraient être placés sur un portail accessible seulement par les employés et l’accès pourrait être surveillé par l’organisation et servir à évaluer le taux de participation à l’activité."
+  }, {
+    q: "Donne un exemple réalisé en bonne et due forme pour le canal ‘’formation juste à temps’’ pour assurer le développement du capital compétence d’une organisation?",
+    a: "Après une analyse des besoins abrégée (sera vu plus tard au chapitre 4/semaine 4), l’idée d’une conférence-midi pourrait sans doute convenir (surtout s’il faut agir rapidement). Il faudrait toutefois assurer la préparation adéquate de cette activité, et ce, tant au niveau de la conception que de sa diffusion et de son évaluation. Par exemple, le fait de prendre en compte a priori les réactions des employés – et d’organiser la conférence autour d’elles – limitera possiblement les déceptions en fin de séance et assurerait par la même occasion une perception plus positive de l’utilité des informations discutées lors de cette activité."
+  },{
+    q: "Nomme un synonyme d’apprentissage juste-à-temps?",
+    a: "Formation juste à temps."
+  },  {
+    q: "L’apprentissage ‘’juste-à-temps’’ est-il formel ou informel, et synchrone ou asynchrone?",
+    a: "L'apprentissage juste-à-temps demeure un moyen informel, car il n'est pas planifié au préalable, et, contrairement à la formation autodirigée, l'atteinte des objectifs n'est ni suivie ni évaluée sur une base formelle, ET Il s'inscrit également au nombre des activités pouvant s'offrir en mode asynchrone, car puisque le contenu doit être enregistré ou préparé à l'avance dans un format adapté, afin que l'apprenant puisse le consulter au moment opportun."
+  },{
+    q: "que signifie la fonction formation?",
+    a: "Un ensemble des activités et des processus d’une organisation assurant la gestion et le développement de son capital compétence."
+  },{
+    q: "À qui revient la responsabilité de la fonction formation qui regroupe les activités et les processus liés à la gestion et au développement du capital compétence?",
+    a: "La responsabilité de cette fonction revient le plus couramment aux services responsables des ressources humaines toutefois dans les organisations de grande taille cette responsabilité peut être partagée entre différents services ou directions."
+  },{
+    q: "Quels sont les facteurs qui conditionne la forme et le rôle que jouera la fonction formation au sein d’une organisation?",
+    a: "la taille et le secteur d'activité de l'organisation, le nombre d'employés, la structure organisationnelle, la valeur (voire philosophie) accordée à la formation par la direction, ainsi que la nature des mandats confiés à la fonction formation et les expertises que détiennent les membres."
+  },{
+    q: "Qu’exige la fonction formation sur le plan technique?",
+    a: "cette responsabilité exige, sur le plan technique, la coordination d'une partie ou de l'ensemble du processus de gestion de la formation et du développement des ressources humaines ."
+  },{
+    q: "quelle est la définition de l’organisation?",
+    a: "Regroupement organisé d'unités de travail dont les membres sont dirigés par un ou plusieurs gestionnaires ayant un mandat officiel à exécuter."
+  },{
+    q: "Que signifi ''finalité''?",
+    a: "désigne le but ultime, la raison d'être ou l'objectif."
+  },{
+    q: "quelles sont les finalités de la fonction formation d’une organisation?",
+    a: "Les finalités de la fonction formation d’une organisation demeurent essentiellement les mêmes bien qu’à des degrés variables nous avons 1) la formation initiale 2) le recyclage ou perfectionnement 3) le développement de carrières ou planification de la relève."
+  },{
+    q: "quelle est la définition de la formation initiale?",
+    a: "posséder dans ses effectifs des employés ayant les compétences requises à l'accomplissement des fonctions relevant des postes auxquels ils sont rattachés."
+  },{
+    q: "quelle est la définition du recyclage au perfectionnement?",
+    a: "Assurer le maintien du niveau de compétence des employés en respect des exigences de leur poste ou selon l'évolution des savoirs utiles dans leurs champs d'expertise."
+  },{
+    q: "quelle est la définition du développement de carrière ou de planification de la relève?",
+    a: "Accroître de façon continue les connaissances et les compétences des employés afin qu'ils puissent contribuer - de façon plus large ou plus approfondie que ne l'exigent leurs fonctions actuelles - à la mission de l'organisation."
+  },{
+    q: "donne quelques exemples d’activité de formation par laquelle la gestion efficace d’une activité de formation peut être conclu?",
+    a: "évoluer les compétences d’employés, préparer un changement organisationnel, entreprendre des tâches plus importantes pour les employés, évoluer la culture de l’organisation et nouveaux comportements à adopter, développer les habiletés des gestionnaires."
+  },{
+    q: "Vrai ou faux l’atteinte de certains cas standards de performance ou d’excellence ne peut plus se faire qu’à partir des seuls points de vue techniques et économiques comme la mécanisation l’informatisation et l’automatisation, par rapport au système de gestion de la formation?",
+    a: "Vrai."
+  },{
+    q: "quelle est la définition du système de gestion de la formation?",
+    a: "Ensemble de pratiques, rôles et processus organisés qui a pour objectif le développement du capital compétence de l'organisation.."
+  },{
+    q: "qu’implique l’adoption d’une perspective stratégique par rapport à la formation?",
+    a: "implique que la formation s'inscrive, d'abord et avant tout, comme une approche intégrée au développement de l'organisation (9-10). Sous cette perspective, le développement des ressources humaines fait partie intégrante des processus décisionnels et des processus d'amélioration continue de l'organisation."
+  },{
+    q: "quelles sont les distinctions entre la perspective traditionnelle et la perspective stratégique par rapport aux personnes concernées?",
+    a: "Dans la perspective traditionnelle ça touche que les apprenants et les formateurs tandis que la perspective stratégique tous les acteurs sont impliqués (direction générale formateur apprenant supérieur immédiat pair client fournisseurs etc)."
+  },{
+    q: "quelles sont les distinctions entre la perspective traditionnelle et la perspective stratégique par rapport au centre de responsabilité, qui est responsable?",
+    a: "Dans la perspective traditionnelle c’est sous la responsabilité des fonctions conseil seulement habituellement la direction des RH tandis que la perspective stratégique la responsabilité partagée entre les fonctions conseils et les opérations (comme les gestionnaires et les employés concernés)."
+  },{
+    q: "quelles sont les distinctions entre la perspective traditionnelle et la perspective stratégique par rapport à la conception?",
+    a: "Dans la perspective traditionnelle c’est inspiré de programmes formels et calculés sur le modèle scolaire tandis que la perspective stratégique est centrée sur les caractéristiques des apprenants et les principes guidant la conception de formation efficace."
+  },{
+    q: "quelles sont les distinctions entre la perspective traditionnelle et la perspective stratégique par rapport aux stratégies de formation privilégiée?",
+    a: "Pour la perspective traditionnelle ce sont de formation ‘’sur le tas’’ et en classe standardisée tandis que pour la perspective stratégique on parle plutôt de formation juste à temps ou taillé sur mesure et de méthodes hybrides s’appuyant sur les technologies d’apprentissage et adaptées au type de savoirs à enseigner."
+  },{
+    q: "quelles sont les distinctions entre la perspective traditionnelle et la perspective stratégique par rapport à l’évaluation finale de la formation qui est la dernière étape du processus si on se rappelle du module 1?",
+    a: "Et bien pour la perspective traditionnelle on parle que de satisfaction des apprenants et évaluation des apprentissages effectués par le formateur tandis que dans la perspective stratégique on parle plutôt d’évaluation du transfert des acquis et de mesures des effets sur l’organisation."
+  },{
+    q: "Qu'est ce qu'un modèle de maturité?",
+    a: "Le modèle de maturité est l’outil dans lequel nous avons les 4 stades évolutifs la fonction informelle la fonction planifiée la fonction alignée et la fonction intégrée."
+  },{
+    q: "quels sont les différents stades de maturité de la fonction formation?",
+    a: "1) Fonction informelle, 2) fonction planifiée, 3) fonction alignée, 4) fonctions intégrées."
+  },{
+    q: "que signifie la maturité de la fonction formation?",
+    a: "Stade de développement atteint par une organisation dans ces pratiques de gestion et de développement de son capital compétence."
+  },{
+    q: "à quoi faisons-nous référence lorsqu’on utilise le mot ‘’maturité’’ dans les stades de maturité de la fonction formation?",
+    a: "La « maturité » évalue à quel point une organisation a dépassé le stade des formations improvisées/ponctuelles pour adopter des pratiques."
+  },{
+    q: "qu’est ce qui peut être considéré comme étant un ensemble de niveaux (ou stades) structurés qui décrivent dans quelle mesure les comportements, les pratiques et les processus d'une organisation peuvent produire de manière fiable et durable les résultats escomptés?",
+    a: "Un modèle de maturité."
+  },{
+    q: "qu’est-ce qui peut être utilisé comme un point de référence pour la comparaison et comme une aide à la compréhension ou la décision (p. ex. pour l'évaluation comparative de différentes organisations lorsqu'il y a quelque chose en commun qui peut être utilisé comme base de comparaison)?",
+    a: "Un modèle de maturité."
+  },{
+    q: "qu’est ce que le stade 1 ‘’la fonction informelle’’ du modèle de maturité?",
+    a: "L'apprentissage découle donc en grande partie de l'observation ainsi que d'essais et d'erreurs, improvisées, non structurées ni planifiées d’avance, c’est un mode ponctuel et informel et un moyen concret pour régler une problématique ponctuelle, mais il tend à être nuisible pour les grandes entreprises et peut manquer de structure."
+  },{
+    q: "Nomme des avantages et désavantages du stade 1 ‘’la fonction informelle’’ du modèle de maturité?",
+    a: "Avantage : ce mode ponctuel et informel peut convenir un moment aux organisations de plus petite taille car le gestionnaire le voit comme étant rapide. Désavantages : 1) ces efforts peuvent toutefois manquer de cohérence ou de structure d’ensemble ce qui a pour effet de réduire l’étendue de leurs bénéfices, 2) Les stratégies d'apprentissage privilégiées sont traditionnelles, souvent individuelles et misent principalement sur des pratiques de compagnonnage non structurées, 3) nuisible pour les grandes entreprises."
+  },{
+    q: "Quelles sont les positions des gestionnaires et des employés par rapport au 1 ‘’la fonction informelle’’ du modèle de maturité?",
+    a: "Les 2 participent activement car ce n’est pas prévu ça arrive sur le moment."
+  },{
+    q: "qu’est ce que le stade 2 ‘’la fonction planifiée’’ du modèle de maturité?",
+    a: "Cette fonction formation est apparente, concrète, structurée et les formations déployées sont planifiés et tendent à s'organiser de façon systématique. La direction considère généralement la formation comme importante pour déployer efficacement leurs activités, et les organisations comportent habituellement un ou plusieurs services désignés comme responsables de la gestion de la formation. Ils prennent une portion de ADDIE."
+  },{
+    q: "quel est le rôle du gestionnaire dans le stade 2 ‘’la fonction planifiée’’ du modèle de maturité?",
+    a: "le rôle des gestionnaires se limite souvent à veiller à ce que leurs employés participent."
+  },{
+    q: "quel est le statut des employés dans le stade 2 ‘’la fonction planifiée’’ du modèle de maturité?",
+    a: "Les employés considèrent les programmes offerts comme étant des préalables à l'accomplissement de nouvelles tâches ou à l'accession vers de nouvelles fonctions au sein de l'organisation."
+  },{
+    q: "Nomme des avantages du stade 2 ‘’la fonction planifiée’’ du modèle de maturité?",
+    a: "Avantages : Les thèmes en lien clair et direct avec les opérations courantes de l'organisation, les programmes offerts sont déjà bien connus et les employés voient ça comme des préalables à l’accomplissement de nouvelles tâches."
+  },{
+    q: "qu’est ce que le stade 3 ‘’la fonction alignée’’ du modèle de maturité?",
+    a: "l'organisation a pris conscience - à travers ses expériences passées et de la valeur de l'apprentissage pour son développement. Des processus déjà bien établis existent, l’organisation intègre habituellement les planifications stratégiques à leur processus, ADDIE est plus profondément ancré et dans toutes les initiatives de changement que sont appelés à mettre en œuvre les différents secteurs de l'organisation. Tous prennent initiative à des activités informelles."
+  },{
+    q: "Sur quoi repose le stade 3 ‘’la fonction alignée’’ du modèle de maturité?",
+    a: "Ce state repose sur une variété de moyens appuyés par des technologies d'apprentissage, et prône le développement des nouvelles compétences en perfectionnement continue avec enthousiasme dans le développement de leurs propres compétences."
+  },{
+    q: "qu’est ce que le stade 4 ‘’la fonction intégrée’’ du modèle de maturité?",
+    a: "Moins d’organisations sont là-dedans, elles œuvrent généralement dans des secteurs hautement compétitifs, où l'agilité, l'innovation pour leur survie. À ce stade œuvrent généralement dans des secteurs hautement compétitifs, où l'agilité, l'innovation avec l'apprentissage et le partage de connaissances doivent être réalisés en continu bien au-delà des moyens formels et structurés généralement offerts, et les applications technologiques viennent soutenir l’organisation."
+  },{
+    q: "quels sont les rôles des gestionnaires et des employés dans le stade 4 ‘’la fonction intégrée’’ du modèle de maturité?",
+    a: "les gestionnaires laissent généralement plus d'autonomie aux employés dans la mise sur pied d'activités formelles ou informelles visant le développement de leurs propres compétences, et les employés s'investissent donc spontanément dans des activités de captation et de partage de connaissances tenues par l'organisation."
+  },{
+    q: "Vrai ou faux; les organisations qui démontrent de bonnes pratiques en matière de gestion de la formation peuvent obtenir une exemption de leurs obligations découlant de la Loi en faisant une demande et l’obtenir directement ?",
+    a: "Faux, ils peuvent l’obtenir en faisant une demande au CPMT obtenant un certificat de qualité des initiatives de formation (CQIF) et ce pour une période de 3 ans renouvelables à conditions spécifiques."
+  },{
+    q: "quelles sont les conditions qui doivent être soutenu et démontrées qui permettent aux organisations d’obtenir une exemption sur les exigences d’obligations découlant de la loi en ce qui en est de la gestion de la formation?",
+    a: "• comment elle analyse la situation de l'organisation sur le plan du développement des compétences; • comment elle établit et priorise les besoins de formation; • comment elle développe le plan des activités de formation à offrir • comment elle met en œuvre les activités de formation; • comment elle définit les méthodes d'évaluation des effets de la formation."
+  },{
+    q: "Que signifie CPMT?",
+    a: "Commission des partenaires du marché du travail (CPMT), c’est  eux qui peuvent émettre un certificat de qualité des initiatives de formation (CQIf) pour exemption à la loi sur une exemption de leurs obligations lorsqu’une organisation démontre de bonnes pratiques en matière de gestion de la formation. FYI le CQIF peut être révoqué en tout temps si la CPMT détermine que les pratiques démontrées ne sont pas respectées."
+  },{
+    q: "qu’est-ce que l’économie de savoir?",
+    a: "1) L’acquisition (chercher nouvelles infos, rechercher et se former pour développer + de savoirs), 2) le traitement (analyser l’infos, exercer son jugement pour résoudre problèmes et créer solutions novatrices), 3) le partage (diffuser ces connaissances dans les équipes, organisation pour que le savoir-faire individuel devienne compétence collective."
+  },{
+    q: "qu’est-ce que la compétence peut contribuer à favoriser par rapport à la gestion de la compétence?",
+    a: "la compétence peut contribuer à favoriser un arrimage entre les postes existants dans l'organisation, les caractéristiques des personnes qui occupent ceux-ci et les moyens de formation pouvant être mobilisés. À titre d'exemple, la mise en relief des niveaux de compétences requis pour les différents postes trouvés au sein de l'organisation facilite l'identification des besoins de formation auxquels il faut remédier afin de soutenir la croissance de l'organisation."
+  },{
+    q: "qu’est-ce que l’approche par compétences vise?",
+    a: "L'approche par compétences vise à utiliser la compétence comme élément central de la gestion du capital humain au sein de l'organisation."
+  },{
+    q: "quelles sont les 3 éléments que l’approche par compétence permet de mettre en rapport?",
+    a: "• le profil de compétences, soit les compétences requises pour effectuer correctement les fonctions particulières • le bilan de compétences, soit les compétences acquises et maîtrisées par l'employé (ou les employés) qui occupe(nt) le poste (ou des postes similaires); • les moyens de formation, soit les ressources disponibles pouvant être utilisées pour acquérir, maitriser ou rafraichir chacune des compétences requises pour un poste."
+  },{
+    q: "que signifie profil de compétences?",
+    a: "Recension des compétences et des indicateurs comportementaux requis les plus importants pour accomplir correctement les fonctions d'un poste. (c’est ce qui est requis pour le poste)."
+  },{
+    q: "que signifie bilan de compétences?",
+    a: "Recension des compétences et des indicateurs comportementaux requis les plus importants pour accomplir correctement les fonctions d'un poste. (ce que l’employé possède réellement comme compétence)."
+  },{
+    q: "par quoi est-ce que le profil de compétences peut être influencé par?",
+    a: "- , les besoins et valeurs  -, le priorité de l’unité d’affaires -, les rôles et responsabilités du poste du poste, - les changements et évolution de l’environnement organisationnel."
+  },{
+    q: "A quoi peut servir le bilan de compétence d’un employé?",
+    a: "Faciliter l'affectation au travail, -déterminez les priorités de formation -planifiez les besoins et les potentiels de relève, -soutenir le développement de carrière."
+  },{
+    q: "à quoi peut servir le profil de compétence d'un poste?",
+    a: "-élaborer un profil d'embauche -déterminez le contenu du programme d'accueil et d'intégration -facilitez la planification de la main-d'œuvre -alimenter le programme de rémunération."
+  },{
+    q: "que signifie référentiel de compétence?",
+    a: "Document ou système qui recense, référence et décrit l’ensemble des compétences relatives aux postes compris dans une organisation."
+  },{
+    q: "en quoi consiste ''déterminer les profils de compétences pour chaque poste de travail''' par rapport à l’approche par compétence?",
+    a: "1) identifier les comportements et pratiques par des personnes maîtrisant les compétences requises 2) sélectionnez les indicateurs comportementaux qui permettront d’évaluer la pratique des compétences, 3) élaborer au besoin un document ou système de référence décrivant les compétences du poste qui regroupe l’ensemble des compétences."
+  },{
+    q: "quelles sont les responsabilités de la direction de l’organisation par rapport aux responsabilités dans la fonction formation?",
+    a: "Être sensible aux besoins de formation à la suite d’une nouvelle orientation stratégique ou décision de gestion et être conscience des nouvelles compétences et expertises à acquérir afin de préserver l’avantage compétitif de l’organisation puis être responsable d’une culture d’apprentissage centrée sur les échanges et le partage."
+  },{
+    q: "quelles sont les responsabilités des services de soutien par rapport aux responsabilités dans la fonction formation?",
+    a: "Soutenir et être conscients que leurs actions peuvent avoir un effet direct sur le niveau de compétence requis par exemple pour tous les nouveaux changements à adopter et les formations qui s’ensuivront."
+  },{
+    q: "quelles sont les responsabilités des gestionnaires par rapport aux responsabilités dans la fonction formation?",
+    a: "1) Renouvellement et maintien du capital compétences de leur équipe 2) subsister la mobilisation des employés 3) s’assurer que les employés ont les compétences requises 4) identifier les besoins de formation 5) mettre en place des conditions favorables aux transferts des apprentissages."
+  },{
+    q: "quelles sont les responsabilités des employés par rapport aux responsabilités dans la fonction formation?",
+    a: "1) Prendre les initiatives pour acquérir les connaissances et habiletés requises, 2) s’impliquer dans le processus d’amélioration de la qualité, 3) être à l’affût de leur propre besoin de formation 4) peuvent parfois agir comme expert concepteur compagnon ou formateur auprès de leurs collègues."
+  },{
+    q: "quel rôle a pour responsabilité formelle d’assurer la gouvernance des processus et des activités de développement des compétences?",
+    a: "Le service de gestion des ressources humaines."
+  },{
+    q: "pourquoi dans certaines situations la gouvernance du système de gestion de la formation est important?",
+    a: "Car dans certaines situations la coordination des pratiques et des façons de faire dans une organisation en gestion de la formation peut devenir complexe et les risques d’incohérence ou dédoublement peuvent s’accentuer C’est pourquoi il est important de définir la gouvernance du système de gestion de la formation."
+  },{
+    q: "qu’est-ce que la gouvernance du système de gestion de la formation?",
+    a: "Cadre définissant la répartition des rôles et des responsabilités concernant la gestion et le développement des compétences au sein de l'organisation."
+  },{
+    q: "qu’est-ce que la gouvernance permet de clarifier?",
+    a: "le cadre dans lequel se répartissent les responsabilités au sein de l'organisation pour tout ce qui touche la gestion et le développement du capital compétence."
+  },{
+    q: "que signifie compétence de base versus compétence émergente?",
+    a: "savoirs et savoir-faire communément possédés ou recherchés dans un service de formation classique) ou qu'elles constituent des domaines d'avenir (compétences émergentes : constituent des domaines d'avenir où les nouvelles technologies d'apprentissage (technopédagogie, plateformes LMS, réalité virtuelle, IA) se généralisent)."
+  },{
+    q: "quelles sont les différences entre le conseiller en formation versus le directeur de la formation?",
+    a: "Le directeur est responsable du bon fonctionnement du système de gestion de la formation Et il doit veiller à ce que la formation donne les résultats désirés tandis que le conseiller lui est responsables de faire le processus ADDIE au complet."
+  },{
+    q: "quel est le rôle du concepteur pédagogique?",
+    a: "responsable d'opérationnaliser les objectifs de la formation en établissant une structure logique pour celle-ci, en élaborant les activités d'apprentissage et en développant le matériel pédagogique, il créer le contenu avec les experts de contenu, soit les personnes qui maitrisent déjà les savoirs à enseigner."
+  },{
+    q: "Nomme les synonymes de directeur de la formation?",
+    a: "Directeur, Apprentissage organisationnel; Directeur, Développement des talents."
+  },{
+    q: "nomme les synonymes de conseiller en formation?",
+    a: "Conseiller, Développement des compétences; Développement des talents; Partenaire d'affaires, Apprentissage."
+  },{
+    q: "nomme les synonymes de concepteurs pédagogiques?",
+    a: "Technopédagogue, Stratège en apprentissage."
+  },{
+    q: "Quel est le rôle de l’instructeur technique (compagnon)?",
+    a: "Il peut aussi intervenir de façon complémentaire pour soutenir un formateur en salle de classe ou en prenant la charge du suivi postformation et du soutien au transfert des apprentissages en situation de travail. Dans ce contexte, l'instructeur technique est habituellement un expert de contenu qui relève des opérations. Le service de formation lui apporte un encadrement et du soutien dans la conception, ainsi que dans le déploiement des initiatives de formation dont il est responsable."
+  },{
+    q: "quel est le rôle du coordonnateur de formation?",
+    a: "un travail important de planification, le coordonnateur de formation vient donc apporter son aide notamment en ce qui a trait à la convocation des apprenants, à la réservation des salles, aux relations avec les fournisseurs externes (p. ex. service de cafétéria) ainsi qu'à la gestion des exigences administratives liées aux obligations réglementaires (p. ex, registre des apprenants, production des attestations de formation)."
+  },{
+    q: "Quels sont les 4 piliers fondamentaux de la fonction formation?",
+    a: "1) Ses 3 finalités principales (formation initiale, recyclage ou perfectionnement et développement de carrières et la planification de la relève), 2) La perspective adoptée (traditionnelle vs stratégique), 3) Les 4 stades de maturité (Stade 1 – Informelle, Stade 2 – Planifiée, Stade 3 – Alignée, Stade 4 – Intégrée), 4) la gouvernance et le partage des rôles (responsabilité partagée)."
+  },{
+    q: "dans quelles circonstances peut-il s’avérer utile de situer le stade de maturité de la fonction formation d’une organisation?",
+    a: "Le recours à un tel outil peut s'avérer utile selon que l'on souhaite: (a) préciser le stade de maturité de la fonction formation de l'organisation, (b) déterminer les manques à gagner pour atteindre un stade supérieur de maturité (ou fournir des conseils sur les meilleures pratiques à adopter pour passer au stade suivant) ou (c) comparer des organisations (ou unités, services, directions d'une même organisation) entre elles."
+  },{
+    q: "Nomme et explique 4 facteurs qui peuvent entraîner l’échec de l’approche de gestion des compétences (elle vise à utiliser la compétence comme élément central de la gestion du capital humain)?",
+    a: "1. L'absence ou la réalisation isolée du bilan de compétences 2. L'absence d'un profil de compétences clair et préalable 3. L'absence de lien avec des moyens concrets de formation et de développement 4. Le manque d'engagement des acteurs et le défaut d'intégration (relève / mise à jour)."
+  },{
+    q: "Quels sont les 3 éléments essentiels de l’approche de gestion des compétences?",
+    a: "1) profil de compétences de l’individu, 2) bilan de compétences, 3) moyens de formation ou de développement."
+  },{
+    q: "Synonyme de l’approche par compétences?",
+    a: "L’approche de gestion des compétences."
+  },{
+    q: "Quels pourraient être des exemples de situations de facteurs qui pourraient entraîner l’échec de l’approche par compétences?",
+    a: "Pour trouver des facteurs d’échec, vous devez vous demander ce qui arrive lorsque l’une des composantes est absente, mal définie ou non reliée aux autres (les 3 éléments : 1) profil de compétences de l’individu, 2) bilan de compétences, 3) moyens de formation ou de développement."
+  },{
+    q: "Pour les stades de maturité; comment le rôle des gestionnaires envers leurs équipes permet-il de différencier rapidement le Stade 3 du Stade 4?",
+    a: "Les gestionnaires soutiennent et encadrent le transfert d'apprentissage en lien avec les priorités au Stade 3 (Alignée), alors qu'ils laissent une grande autonomie aux employés pour créer et piloter leurs propres activités au Stade 4 (Intégrée)."
+  },{
+    q: "Pour les stades de maturité; Si une entreprise présente un calendrier annuel de formation très structuré, pourquoi cela peut-il porter à confusion entre la fonction planifiée et la fonction alignée?",
+    a: "?  L'existence d'un catalogue structuré relève du Stade 2 (Planifié) lorsqu'il cible uniquement la conformité et les opérations courantes, alors qu'au Stade 3 (Aligné), les programmes découlent directement de la planification stratégique d'affaires et des projets de changement."
+  },{
+    q: "Pour les stades de maturité; Comment le motif d'introduction d'un nouveau logiciel permet-il de trancher rapidement entre le Stade 2 et le Stade 3?",
+    a: "La formation est au Stade 2 (Planifié) si elle vise simplement l'apprentissage technique de l'outil pour les opérations, tandis qu'elle bascule au Stade 3 (Aligné) si l'analyse des besoins s'articule autour des objectifs stratégiques de transformation découlant de ce changement."
+  },{
+    q: "Pour les stades de maturité; Pourquoi le rôle des gestionnaires qui inscrivent leurs employés aux formations peut-il induire un faux diagnostic de fonction alignée Vs fonction planifiée?",
+    a: "Au stade 2 (Planifié), les gestionnaires se contentent de libérer leurs employés pour qu'ils assistent aux cours, alors qu'au Stade 3 (Aligné), ils participent activement à l'analyse des besoins et soutiennent le transfert des apprentissages au travail."
+  },{
+    q: "Pour les stades de maturité; Pourquoi la présence d'un service RH dédié à la formation ne garantit-elle pas d'être au Stade 3?",
+    a: "Un service RH dédié orchestre la logistique des cours et l'analyse classique au Stade 2 (Planifié), mais la fonction devient Stade 3 (Alignée) uniquement lorsque l'analyse des besoins s'intègre au réflexe global de planification stratégique de l'entreprise."
+  },{
+    q: "STADE DE MATURITÉ Q : Si un dirigeant affirme qu'un formateur externe a été engagé pour donner un atelier rapide, pourquoi cela peut-il porter à confusion entre la fonction informelle et planifiée?",
+    a: "La présence d'un intervenant externe évoque la structuration, mais si la formation est exigée en urgence sans analyse des besoins pour régler un problème ponctuel sans déranger la production, elle relève du Stade 1 (Informel)."
+  },{
+    q: "STADE DE MATURITÉ Q : Stade 1 VS Stade 2; Comment différencier rapidement une intention exprimée par le service RH d'une pratique réelle d'organisation pour poser le bon diagnostic?",
+    a: "Le diagnostic doit s'appuyer sur les pratiques réelles et la culture imposées par la direction en stade 2 plutôt que sur des propositions de plans RH non encore adoptées ou ancrées dans l'entreprise."
+  },{
+    q: "STADE DE MATURITÉ Q : Pourquoi la formule « les employés s'adapteront avec du temps et de la pratique » est-elle un indicateur décisif du Stade 1?",
+    a: "compagnonnage non structuré, ce qui confirme l'absence de système de formation formalisé."
+  },{
+    q: "STADE DE MATURITÉ Q : Quelle est la différence clé quant à la perception de la direction entre la fonction informelle et la fonction planifiée?",
+    a: "? La direction voit la formation comme une dépense ou une contrainte opérationnelle (même si nécessaire pour cette situation particulière) au Stade 1, alors qu'elle la considère comme un outil nécessaire aux opérations courantes (et déjà établi en temps normal pour pleins d’autres situations; déjà adoptées) et à la conformité au Stade 2."
+  },{
+    q: "STADE DE MATURITÉ Q : Si une entreprise offre une formation sur un nouveau logiciel, quel critère concret permet d'établir rapidement qu'il s'agit du Stade 2?",
+    a: "Le Stade 2 (Planifié) est confirmé lorsque l'activité est déployée de façon systématique par un service désigné comme un préalable structuré lié aux exigences du poste."
+  },{
+    q: "En quoi le fait de sauter l'étape d'analyse des besoins permet-il de trancher en faveur de la fonction informelle?",
+    a: "Décider unilatéralement d'une formation sous le coup de l'urgence sans diagnostiquer les causes réelles de l'écart de rendement est la marque d'une action réactive et improvisée, propre au Stade 1."
+  },
+
+];let cards = [...originalCards];
+const markedCards = new Set();
+
+function updateErrorCount() {
+  const count = markedCards.size;
+  document.getElementById('errorBadge').textContent = count;
+  document.getElementById('modalErrorCount').textContent = count;
+
+  const total = cards.length;
+  const successful = Math.max(0, total - count);
+  const percentage = total ? Math.round((successful / total) * 100) : 0;
+  document.getElementById('successPercent').textContent = percentage + ' %';
+  document.getElementById('successFill').style.width = percentage + '%';
+  document.querySelector('.success-track').setAttribute('aria-valuenow', percentage);
+  document.getElementById('successDetails').textContent =
+    `${count} carte${count === 1 ? '' : 's'} en rouge · ${successful} carte${successful === 1 ? '' : 's'} réussie${successful === 1 ? '' : 's'} sur ${total}`;
+}
+
+function createCardFace(item, isErrorList = false) {
+  const wrap = document.createElement('div');
+  if (isErrorList) {
+    wrap.className = 'error-card';
+    wrap.innerHTML = `<button class="unmark-btn" type="button" aria-label="Retirer cette carte des cartes d'erreurs" title="Remettre cette carte en normal"></button>
+      <strong>${escapeHtml(item.q)}</strong><div class="answer">${escapeHtml(item.a)}</div>`;
+    wrap.querySelector('.unmark-btn').addEventListener('click', (event) => {
+      event.stopPropagation();
+      markedCards.delete(item);
+      render();
+      renderErrorCards();
+    });
+    wrap.addEventListener('click', () => wrap.classList.toggle('flipped'));
+    return wrap;
+  }
+
+  wrap.className = 'card-wrap' + (markedCards.has(item) ? ' marked' : '');
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="face front">
+        <div>${escapeHtml(item.q)}</div>
+        <div class="hint">Clique pour voir la réponse 👆</div>
+      </div>
+      <div class="face back">
+        <div>${escapeHtml(item.a)}</div>
+        <div class="hint">Clique pour revenir à la question 👆</div>
+      </div>
+    </div>`;
+
+  const markBtn = document.createElement('button');
+  markBtn.className = 'mark-btn' + (markedCards.has(item) ? ' marked' : '');
+  markBtn.type = 'button';
+  markBtn.setAttribute('aria-label', markedCards.has(item) ? 'Retirer des cartes d’erreurs' : 'Marquer cette question comme erreur');
+  markBtn.title = markedCards.has(item) ? 'Carte marquée comme erreur' : 'Marquer comme erreur';
+  wrap.appendChild(markBtn);
+
+  markBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (markedCards.has(item)) markedCards.delete(item);
+    else markedCards.add(item);
+    render();
+    renderErrorCards();
+  });
+
+  wrap.addEventListener('click', () => {
+    wrap.querySelector('.card').classList.toggle('flipped');
+  });
+  return wrap;
+}
+
+function render() {
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  document.getElementById('count').textContent = cards.length;
+  cards.forEach(item => container.appendChild(createCardFace(item)));
+  updateErrorCount();
+}
+
+function renderErrorCards() {
+  const container = document.getElementById('errorCardsList');
+  container.innerHTML = '';
+  const errorCards = cards.filter(item => markedCards.has(item));
+  document.getElementById('modalErrorCount').textContent = errorCards.length;
+  document.getElementById('errorBadge').textContent = errorCards.length;
+  if (errorCards.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-errors';
+    empty.textContent = 'Aucune carte en rouge pour le moment. Clique sur le point rouge d’une carte pour l’ajouter ici.';
+    container.appendChild(empty);
+    return;
+  }
+  errorCards.forEach(item => container.appendChild(createCardFace(item, true)));
+}
+
+const errorModalOverlay = document.getElementById('errorModalOverlay');
+document.getElementById('errorBubble').addEventListener('click', () => {
+  renderErrorCards();
+  errorModalOverlay.classList.add('open');
+});
+document.getElementById('closeErrorModal').addEventListener('click', () => errorModalOverlay.classList.remove('open'));
+errorModalOverlay.addEventListener('click', event => {
+  if (event.target === errorModalOverlay) errorModalOverlay.classList.remove('open');
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') errorModalOverlay.classList.remove('open');
+});
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+document.getElementById('shuffleBtn').addEventListener('click', () => {
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  render();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+});
+
+render();
+</script>
+</body>
+</html>
